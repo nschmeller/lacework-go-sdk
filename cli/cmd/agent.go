@@ -41,6 +41,7 @@ var (
 		InstallTrustHostKey bool
 		InstallPassword     string
 		InstallIdentityFile string
+		CTFInfraTagKey      string
 	}{}
 
 	defaultSshIdentityKey = "~/.ssh/id_rsa"
@@ -158,6 +159,25 @@ To list all active agents in your environment.
 NOTE: New agents could take up to an hour to report back to the platform.`,
 		RunE: installRemoteAgent,
 	}
+
+	agentCTFCmd = &cobra.Command{
+		Use:   "ctf",
+		Short: "Install the datacollector agent on all remote hosts",
+		Long:  "TODO",
+	}
+
+	agentCTFAWSCmd = &cobra.Command{
+		Use:   "aws",
+		Short: "Install the datacollector agent on all remote AWS hosts",
+		Long: `This command installs the agent on all remote AWS hosts in your account.
+
+The environment should contain AWS credentials in the following variables:
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- AWS_SESSION_TOKEN (optional)
+		`,
+		RunE: awsCaptureTheFlag,
+	}
 )
 
 func init() {
@@ -169,12 +189,16 @@ func init() {
 	agentCmd.AddCommand(agentInstallCmd)
 	agentCmd.AddCommand(agentGenerateCmd)
 	agentCmd.AddCommand(agentListCmd)
+	agentCmd.AddCommand(agentCTFCmd)
 
 	// add the list sub-command to the 'agent token' cmd
 	agentTokenCmd.AddCommand(agentTokenListCmd)
 	agentTokenCmd.AddCommand(agentTokenCreateCmd)
 	agentTokenCmd.AddCommand(agentTokenShowCmd)
 	agentTokenCmd.AddCommand(agentTokenUpdateCmd)
+
+	// add sub-commands to the 'agent ctf' cmd for different cloud providers
+	agentCTFCmd.AddCommand(agentCTFAWSCmd)
 
 	// 'agent token update' flags
 	agentTokenUpdateCmd.Flags().BoolVar(&agentCmdState.TokenUpdateEnable,
@@ -212,6 +236,15 @@ func init() {
 	)
 	agentInstallCmd.Flags().BoolVar(&agentCmdState.InstallTrustHostKey,
 		"trust_host_key", false, "automatically add host keys to the ~/.ssh/known_hosts file",
+	)
+
+	// 'agent ctf' flags
+	agentCTFAWSCmd.Flags().StringVarP(&agentCmdState.CTFInfraTagKey,
+		"infra_tag", "t", "", "only install agents on infra with this tag",
+	)
+	agentInstallCmd.Flags().StringVarP(&agentCmdState.InstallIdentityFile,
+		"identity_file", "i", defaultSshIdentityKey,
+		"identity (private key) for public key authentication",
 	)
 }
 
