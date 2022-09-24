@@ -246,6 +246,12 @@ func init() {
 		"identity_file", "i", defaultSshIdentityKey,
 		"identity (private key) for public key authentication",
 	)
+	agentCTFAWSCmd.Flags().StringVar(&agentCmdState.InstallAgentToken,
+		"token", "", "agent access token",
+	)
+	agentCTFAWSCmd.Flags().BoolVar(&agentCmdState.InstallTrustHostKey,
+		"trust_host_key", false, "automatically add host keys to the ~/.ssh/known_hosts file",
+	)
 }
 
 func showAgentToken(_ *cobra.Command, args []string) error {
