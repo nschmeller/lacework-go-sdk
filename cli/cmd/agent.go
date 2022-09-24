@@ -242,7 +242,7 @@ func init() {
 	agentCTFAWSCmd.Flags().StringVarP(&agentCmdState.CTFInfraTagKey,
 		"infra_tag", "t", "", "only install agents on infra with this tag",
 	)
-	agentInstallCmd.Flags().StringVarP(&agentCmdState.InstallIdentityFile,
+	agentCTFAWSCmd.Flags().StringVarP(&agentCmdState.InstallIdentityFile,
 		"identity_file", "i", defaultSshIdentityKey,
 		"identity (private key) for public key authentication",
 	)
