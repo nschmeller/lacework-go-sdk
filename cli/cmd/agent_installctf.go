@@ -38,6 +38,7 @@ func awsCaptureTheFlag(_ *cobra.Command, args []string) error {
 	}
 
 	for _, runner := range runners {
+		cli.Log.Debugw("runner: ", runner)
 		cli.Log.Debugw("ssh ctf settings", "identity_file", agentCmdState.InstallIdentityFile)
 		err := runner.UseIdentityFile(agentCmdState.InstallIdentityFile)
 		if err != nil {
@@ -45,10 +46,12 @@ func awsCaptureTheFlag(_ *cobra.Command, args []string) error {
 		}
 
 		if err := verifyAccessToRemoteHost(runner); err != nil {
+			cli.Log.Debugw("verifyAccessToRemoteHost failed")
 			return err
 		}
 
 		if err := isAgentInstalledOnRemoteHost(runner); err != nil {
+			cli.Log.Debugw("isAgentInstalledOnRemoteHost failed")
 			return err
 		}
 
@@ -65,6 +68,7 @@ func awsCaptureTheFlag(_ *cobra.Command, args []string) error {
 		cmd := fmt.Sprintf("sudo sh -c \"curl -sSL %s | sh -s -- %s\"", agentInstallDownloadURL, token)
 		err = runInstallCommandOnRemoteHost(runner, cmd)
 		if err != nil {
+			cli.Log.Debugw("runInstallCommandOnRemoteHost failed")
 			return err
 		}
 	}

@@ -238,7 +238,7 @@ func init() {
 		"trust_host_key", false, "automatically add host keys to the ~/.ssh/known_hosts file",
 	)
 
-	// 'agent ctf' flags
+	// 'agent ctf aws' flags
 	agentCTFAWSCmd.Flags().StringVarP(&agentCmdState.CTFInfraTagKey,
 		"infra_tag", "t", "", "only install agents on infra with this tag",
 	)
