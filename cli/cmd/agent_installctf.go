@@ -38,7 +38,7 @@ func awsCaptureTheFlag(_ *cobra.Command, args []string) error {
 	}
 
 	for _, runner := range runners {
-		cli.Log.Debugw("runner: ", runner)
+		cli.Log.Debugw("runner: ", "runner", runner)
 		cli.Log.Debugw("ssh ctf settings", "identity_file", agentCmdState.InstallIdentityFile)
 		err := runner.UseIdentityFile(agentCmdState.InstallIdentityFile)
 		if err != nil {
