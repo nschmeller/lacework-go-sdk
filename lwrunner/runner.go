@@ -65,6 +65,7 @@ func (run Runner) UseIdentityFile(file string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("signer PublicKey(): ", signer.PublicKey())
 	run.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
 	return nil
 }
@@ -215,6 +216,8 @@ func newSignerFromFile(keyname string) (ssh.Signer, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println(string(buf))
 
 	return ssh.ParsePrivateKey(buf)
 }
