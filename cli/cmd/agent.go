@@ -277,10 +277,10 @@ func init() {
 	)
 
 	// 'agent ctf aws ssh' flags
-	agentCTFAWSEC2ICCmd.Flags().StringVarP(&agentCmdState.CTFInfraTagKey,
+	agentCTFAWSSSHCmd.Flags().StringVarP(&agentCmdState.CTFInfraTagKey,
 		"infra_tag_key", "k", "", "only install agents on infra with this tag key set",
 	)
-	agentCTFAWSEC2ICCmd.Flags().StringArrayVarP(&agentCmdState.CTFInfraTag,
+	agentCTFAWSSSHCmd.Flags().StringArrayVarP(&agentCmdState.CTFInfraTag,
 		"infra_tag", "t", []string{}, "only install agents on infra with this tag",
 	)
 	agentCTFAWSSSHCmd.Flags().StringVarP(&agentCmdState.InstallIdentityFile,
