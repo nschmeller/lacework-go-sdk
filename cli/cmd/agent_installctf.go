@@ -31,7 +31,57 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func awsCaptureTheFlag(_ *cobra.Command, args []string) error {
+func awsCaptureTheFlagSSH(_ *cobra.Command, args []string) error {
+	runners, err := awsFindRunnersToCapture()
+	if err != nil {
+		return err
+	}
+
+	for _, runner := range runners {
+		cli.Log.Debugw("runner: ", "runner", runner)
+		cli.Log.Debugw("runner user: ", "user", runner.Runner.User)
+		cli.Log.Debugw("runner region: ", "region", runner.Region)
+		cli.Log.Debugw("runner az: ", "az", runner.AvailabilityZone)
+		cli.Log.Debugw("runner instance ID: ", "instance ID", runner.InstanceID)
+		cli.Log.Debugw("runner: ", "runner hostname", runner.Runner.Hostname)
+
+		err := runner.Runner.UseIdentityFile(agentCmdState.InstallIdentityFile)
+		if err != nil {
+			return errors.Wrap(err, "unable to use provided identity file")
+		}
+
+		if err := verifyAccessToRemoteHost(&runner.Runner); err != nil {
+			cli.Log.Debugw("verifyAccessToRemoteHost failed")
+			return err
+		}
+
+		if err := isAgentInstalledOnRemoteHost(&runner.Runner); err != nil {
+			cli.Log.Debugw("isAgentInstalledOnRemoteHost failed")
+			return err
+		}
+
+		token := agentCmdState.InstallAgentToken
+		if token == "" {
+			// user didn't provide an agent token
+			cli.Log.Debugw("agent token not provided")
+			var err error
+			token, err = selectAgentAccessToken()
+			if err != nil {
+				return err
+			}
+		}
+		cmd := fmt.Sprintf("sudo sh -c \"curl -sSL %s | sh -s -- %s\"", agentInstallDownloadURL, token)
+		err = runInstallCommandOnRemoteHost(&runner.Runner, cmd)
+		if err != nil {
+			cli.Log.Debugw("runInstallCommandOnRemoteHost failed")
+			return err
+		}
+	}
+
+	return nil
+}
+
+func awsCaptureTheFlagEC2IC(_ *cobra.Command, args []string) error {
 	runners, err := awsFindRunnersToCapture()
 	if err != nil {
 		return err

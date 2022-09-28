@@ -176,8 +176,23 @@ The environment should contain AWS credentials in the following variables:
 - AWS_ACCESS_KEY_ID
 - AWS_SECRET_ACCESS_KEY
 - AWS_SESSION_TOKEN (optional)
+TODO this is currently a no-op, used for subcommands
 		`,
-		RunE: awsCaptureTheFlag,
+		// RunE: awsCaptureTheFlag,
+	}
+
+	agentCTFAWSEC2ICCmd = &cobra.Command{
+		Use:   "ec2ic",
+		Short: "Use EC2InstanceConnect to install the datacollector agent on all remote AWS hosts",
+		Long:  "TODO",
+		RunE:  awsCaptureTheFlagEC2IC,
+	}
+
+	agentCTFAWSSSHCmd = &cobra.Command{
+		Use:   "ssh",
+		Short: "Provide and use SSH authentication to install the datacollector agent on all remote AWS hosts",
+		Long:  "TODO",
+		RunE:  awsCaptureTheFlagSSH,
 	}
 )
 
@@ -200,6 +215,10 @@ func init() {
 
 	// add sub-commands to the 'agent ctf' cmd for different cloud providers
 	agentCTFCmd.AddCommand(agentCTFAWSCmd)
+
+	// add sub-commands to the 'agent ctf aws' command for different install methods
+	agentCTFAWSCmd.AddCommand(agentCTFAWSEC2ICCmd)
+	agentCTFAWSCmd.AddCommand(agentCTFAWSSSHCmd)
 
 	// 'agent token update' flags
 	agentTokenUpdateCmd.Flags().BoolVar(&agentCmdState.TokenUpdateEnable,
@@ -239,22 +258,45 @@ func init() {
 		"trust_host_key", false, "automatically add host keys to the ~/.ssh/known_hosts file",
 	)
 
-	// 'agent ctf aws' flags
-	agentCTFAWSCmd.Flags().StringVarP(&agentCmdState.CTFInfraTagKey,
+	// 'agent ctf aws ec2ic' flags
+	agentCTFAWSEC2ICCmd.Flags().StringVarP(&agentCmdState.CTFInfraTagKey,
 		"infra_tag", "t", "", "only install agents on infra with this tag",
 	)
-	agentCTFAWSCmd.Flags().StringVarP(&agentCmdState.InstallIdentityFile,
+	agentCTFAWSEC2ICCmd.Flags().StringVar(&agentCmdState.InstallAgentToken,
+		"token", "", "agent access token",
+	)
+	agentCTFAWSEC2ICCmd.Flags().BoolVar(&agentCmdState.InstallTrustHostKey,
+		"trust_host_key", false, "automatically add host keys to the ~/.ssh/known_hosts file",
+	)
+	agentCTFAWSEC2ICCmd.Flags().StringArrayVarP(&agentCmdState.CTFIncludeRegions,
+		"include_regions", "r", []string{}, "list of regions to filter on",
+	)
+
+	// 'agent ctf aws ssh' flags
+	agentCTFAWSSSHCmd.Flags().StringVarP(&agentCmdState.CTFInfraTagKey,
+		"infra_tag", "t", "", "only install agents on infra with this tag",
+	)
+	agentCTFAWSSSHCmd.Flags().StringVarP(&agentCmdState.InstallIdentityFile,
 		"identity_file", "i", defaultSshIdentityKey,
 		"identity (private key) for public key authentication",
 	)
-	agentCTFAWSCmd.Flags().StringVar(&agentCmdState.InstallAgentToken,
+	agentCTFAWSSSHCmd.Flags().StringVar(&agentCmdState.InstallAgentToken,
 		"token", "", "agent access token",
 	)
-	agentCTFAWSCmd.Flags().BoolVar(&agentCmdState.InstallTrustHostKey,
+	agentCTFAWSSSHCmd.Flags().BoolVar(&agentCmdState.InstallTrustHostKey,
 		"trust_host_key", false, "automatically add host keys to the ~/.ssh/known_hosts file",
 	)
-	agentCTFAWSCmd.Flags().StringArrayVarP(&agentCmdState.CTFIncludeRegions,
+	agentCTFAWSSSHCmd.Flags().StringArrayVarP(&agentCmdState.CTFIncludeRegions,
 		"include_regions", "r", []string{}, "list of regions to filter on",
+	)
+	agentCTFAWSSSHCmd.Flags().StringVar(&agentCmdState.InstallPassword,
+		"ssh_password", "", "password for authentication",
+	)
+	agentCTFAWSSSHCmd.Flags().StringVar(&agentCmdState.InstallSshUser,
+		"ssh_username", "", "username to login with",
+	)
+	agentCTFAWSSSHCmd.Flags().IntVar(&agentCmdState.InstallSshPort,
+		"ssh_port", 22, "port to connect to on the remote host",
 	)
 }
 
