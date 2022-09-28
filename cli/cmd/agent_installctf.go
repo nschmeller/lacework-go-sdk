@@ -198,6 +198,7 @@ func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 
 	var filters []types.Filter
 	if tagKey != "" {
+		cli.Log.Debugw("found tagKey", "tagKey", tagKey)
 		filters = append(filters, types.Filter{
 			Name: aws.String("tag-key"),
 			Values: []string{
@@ -206,6 +207,7 @@ func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 		})
 	}
 	if len(tag) > 0 {
+		cli.Log.Debugw("found tags", "tag length", len(tag), "tags", tag)
 		filters = append(filters, types.Filter{
 			Name:   aws.String("tag:" + tag[0]),
 			Values: tag[1:],
@@ -224,6 +226,7 @@ func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 	for _, reservation := range result.Reservations {
 		for _, instance := range reservation.Instances {
 			if instance.PublicIpAddress != nil {
+				cli.Log.Debugw("found runner", "public ip address", *instance.PublicIpAddress)
 				runner := lwrunner.NewAWSRunner(user, *instance.PublicIpAddress, region, *instance.Placement.AvailabilityZone, *instance.InstanceId, verifyHostCallback)
 				runners = append(runners, runner)
 			}
