@@ -39,6 +39,10 @@ func awsCaptureTheFlag(_ *cobra.Command, args []string) error {
 
 	for _, runner := range runners {
 		cli.Log.Debugw("runner: ", "runner", runner)
+		cli.Log.Debugw("runner user: ", "user", runner.Runner.User)
+		cli.Log.Debugw("runner region: ", "region", runner.Region)
+		cli.Log.Debugw("runner az: ", "az", runner.AvailabilityZone)
+		cli.Log.Debugw("runner instance ID: ", "instance ID", runner.InstanceID)
 		cli.Log.Debugw("runner: ", "runner hostname", runner.Runner.Hostname)
 		err := runner.SendAndUseIdentityFile()
 		if err != nil {

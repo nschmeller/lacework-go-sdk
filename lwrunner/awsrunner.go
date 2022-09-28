@@ -61,6 +61,14 @@ func (run AWSRunner) SendAndUseIdentityFile() error {
 		return err
 	}
 
+	fmt.Println("pubBytes in SendAndUseIdentityFile: ", string(pubBytes))
+	fmt.Println("privBytes in SendAndUseIdentityFile: ", string(privBytes))
+
+	err = run.SendPublicKey(pubBytes)
+	if err != nil {
+		return err
+	}
+
 	signer, err := ssh.ParsePrivateKey(privBytes)
 	if err != nil {
 		return err
@@ -90,7 +98,11 @@ func (run AWSRunner) SendPublicKey(pubBytes []byte) error {
 		SSHPublicKey:     aws.String(string(pubBytes)),
 	}
 
-	_, err := svc.SendSSHPublicKey(input)
+	output, err := svc.SendSSHPublicKey(input)
+	fmt.Println(output)
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
