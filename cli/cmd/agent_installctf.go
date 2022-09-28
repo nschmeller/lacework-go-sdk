@@ -81,19 +81,68 @@ func awsCaptureTheFlag(_ *cobra.Command, args []string) error {
 }
 
 func awsFindRunnersToCapture() ([]*lwrunner.AWSRunner, error) {
-	var (
-		tagKey = agentCmdState.CTFInfraTagKey
-		user   = "ubuntu"
-	)
-
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	regions, err := awsFindRegions()
 	if err != nil {
 		return nil, err
 	}
 
+	allRunners := []*lwrunner.AWSRunner{}
+	for _, region := range regions {
+		regionRunners, err := awsFindRunnersInRegion(*region.RegionName)
+		if err != nil {
+			return nil, err
+		}
+		allRunners = append(allRunners, regionRunners...)
+	}
+
+	return allRunners, nil
+}
+
+// awsFindRegions queries the AWS API to list all the regions that
+// are enabled for the user's AWS account. Use the "include_regions"
+// command-line flag to only get regions in this list.
+func awsFindRegions() ([]types.Region, error) {
+	// Describe all regions that are enabled for the account
+	var filters []types.Filter
+	if len(agentCmdState.CTFIncludeRegions) > 0 {
+		filters = []types.Filter{
+			{
+				Name:   aws.String("region-name"),
+				Values: agentCmdState.CTFIncludeRegions,
+			},
+		}
+	}
+	input := &ec2.DescribeRegionsInput{
+		Filters: filters,
+	}
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return nil, err
+	}
 	svc := ec2.New(ec2.Options{
 		Credentials: cfg.Credentials,
-		Region:      "us-east-2",
+		Region:      "us-west-2", // use us-west-2 for lack of a better region
+	})
+
+	output, err := svc.DescribeRegions(context.TODO(), input)
+	if err != nil {
+		return nil, err
+	}
+	return output.Regions, nil
+}
+
+func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
+	var (
+		tagKey = agentCmdState.CTFInfraTagKey
+		user   = "ubuntu"
+	)
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	svc := ec2.New(ec2.Options{
+		Credentials: cfg.Credentials,
+		Region:      region,
 	})
 
 	var filter []types.Filter
@@ -111,17 +160,16 @@ func awsFindRunnersToCapture() ([]*lwrunner.AWSRunner, error) {
 		Filters: filter,
 	}
 
-	runners := []*lwrunner.AWSRunner{}
-
 	result, err := svc.DescribeInstances(context.TODO(), input)
 	if err != nil {
 		return nil, err
 	}
 
+	runners := []*lwrunner.AWSRunner{}
 	for _, reservation := range result.Reservations {
 		for _, instance := range reservation.Instances {
 			if instance.PublicIpAddress != nil {
-				runner := lwrunner.NewAWSRunner(user, *instance.PublicIpAddress, "us-east-2", *instance.Placement.AvailabilityZone, *instance.InstanceId, verifyHostCallback)
+				runner := lwrunner.NewAWSRunner(user, *instance.PublicIpAddress, region, *instance.Placement.AvailabilityZone, *instance.InstanceId, verifyHostCallback)
 				runners = append(runners, runner)
 			}
 		}

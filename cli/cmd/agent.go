@@ -42,6 +42,7 @@ var (
 		InstallPassword     string
 		InstallIdentityFile string
 		CTFInfraTagKey      string
+		CTFIncludeRegions   []string
 	}{}
 
 	defaultSshIdentityKey = "~/.ssh/id_rsa"
@@ -251,6 +252,9 @@ func init() {
 	)
 	agentCTFAWSCmd.Flags().BoolVar(&agentCmdState.InstallTrustHostKey,
 		"trust_host_key", false, "automatically add host keys to the ~/.ssh/known_hosts file",
+	)
+	agentCTFAWSCmd.Flags().StringArrayVarP(&agentCmdState.CTFIncludeRegions,
+		"include_regions", "r", []string{}, "list of regions to filter on",
 	)
 }
 
