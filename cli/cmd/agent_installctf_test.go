@@ -9,6 +9,10 @@ import (
 
 // Requires AWS credentials in the shell environment
 func TestAwsFindRunnersToCapture(t *testing.T) {
+	// agentCmdState.CTFInfraTag = []string{
+	// 	"CaptureTheFlagPlayer",
+	// 	"guid123",
+	// }
 	runners, err := awsFindRunnersToCapture()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, runners)

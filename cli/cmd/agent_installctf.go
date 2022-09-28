@@ -207,7 +207,7 @@ func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 	}
 	if len(tag) > 0 {
 		filters = append(filters, types.Filter{
-			Name:   aws.String(tag[0]),
+			Name:   aws.String("tag:" + tag[0]),
 			Values: tag[1:],
 		})
 	}
