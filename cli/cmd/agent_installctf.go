@@ -184,6 +184,7 @@ func awsFindRegions() ([]types.Region, error) {
 func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 	var (
 		tagKey = agentCmdState.CTFInfraTagKey
+		tag    = agentCmdState.CTFInfraTag
 		user   = "ubuntu"
 	)
 	cfg, err := config.LoadDefaultConfig(context.TODO())
@@ -195,19 +196,23 @@ func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 		Region:      region,
 	})
 
-	var filter []types.Filter
+	var filters []types.Filter
 	if tagKey != "" {
-		filter = []types.Filter{
-			{
-				Name: aws.String("tag-key"),
-				Values: []string{
-					tagKey,
-				},
+		filters = append(filters, types.Filter{
+			Name: aws.String("tag-key"),
+			Values: []string{
+				tagKey,
 			},
-		}
+		})
+	}
+	if len(tag) > 0 {
+		filters = append(filters, types.Filter{
+			Name:   aws.String(tag[0]),
+			Values: tag[1:],
+		})
 	}
 	input := &ec2.DescribeInstancesInput{
-		Filters: filter,
+		Filters: filters,
 	}
 
 	result, err := svc.DescribeInstances(context.TODO(), input)
