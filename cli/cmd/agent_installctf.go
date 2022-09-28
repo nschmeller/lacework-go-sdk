@@ -39,19 +39,18 @@ func awsCaptureTheFlag(_ *cobra.Command, args []string) error {
 
 	for _, runner := range runners {
 		cli.Log.Debugw("runner: ", "runner", runner)
-		cli.Log.Debugw("runner: ", "runner hostname", runner.Hostname)
-		cli.Log.Debugw("ssh ctf settings", "identity_file", agentCmdState.InstallIdentityFile)
-		err := runner.UseIdentityFile(agentCmdState.InstallIdentityFile)
+		cli.Log.Debugw("runner: ", "runner hostname", runner.Runner.Hostname)
+		err := runner.SendAndUseIdentityFile()
 		if err != nil {
 			return errors.Wrap(err, "unable to use provided identity file")
 		}
 
-		if err := verifyAccessToRemoteHost(runner); err != nil {
+		if err := verifyAccessToRemoteHost(&runner.Runner); err != nil {
 			cli.Log.Debugw("verifyAccessToRemoteHost failed")
 			return err
 		}
 
-		if err := isAgentInstalledOnRemoteHost(runner); err != nil {
+		if err := isAgentInstalledOnRemoteHost(&runner.Runner); err != nil {
 			cli.Log.Debugw("isAgentInstalledOnRemoteHost failed")
 			return err
 		}
@@ -67,7 +66,7 @@ func awsCaptureTheFlag(_ *cobra.Command, args []string) error {
 			}
 		}
 		cmd := fmt.Sprintf("sudo sh -c \"curl -sSL %s | sh -s -- %s\"", agentInstallDownloadURL, token)
-		err = runInstallCommandOnRemoteHost(runner, cmd)
+		err = runInstallCommandOnRemoteHost(&runner.Runner, cmd)
 		if err != nil {
 			cli.Log.Debugw("runInstallCommandOnRemoteHost failed")
 			return err
@@ -77,7 +76,7 @@ func awsCaptureTheFlag(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func awsFindRunnersToCapture() ([]*lwrunner.Runner, error) {
+func awsFindRunnersToCapture() ([]*lwrunner.AWSRunner, error) {
 	var (
 		tagKey = agentCmdState.CTFInfraTagKey
 		user   = "ubuntu"
@@ -108,7 +107,7 @@ func awsFindRunnersToCapture() ([]*lwrunner.Runner, error) {
 		Filters: filter,
 	}
 
-	runners := []*lwrunner.Runner{}
+	runners := []*lwrunner.AWSRunner{}
 
 	result, err := svc.DescribeInstances(context.TODO(), input)
 	if err != nil {
@@ -118,7 +117,7 @@ func awsFindRunnersToCapture() ([]*lwrunner.Runner, error) {
 	for _, reservation := range result.Reservations {
 		for _, instance := range reservation.Instances {
 			if instance.PublicIpAddress != nil {
-				runner := lwrunner.New(user, *instance.PublicIpAddress, verifyHostCallback)
+				runner := lwrunner.NewAWSRunner(user, *instance.PublicIpAddress, "us-east-2", *instance.Placement.AvailabilityZone, *instance.InstanceId, verifyHostCallback)
 				runners = append(runners, runner)
 			}
 		}
