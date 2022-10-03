@@ -197,6 +197,16 @@ func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 	})
 
 	var filters []types.Filter
+
+	// Filter for instances that are running
+	filters = append(filters, types.Filter{
+		Name: aws.String("instance-state-name"),
+		Values: []string{
+			"running",
+		},
+	})
+
+	// Filter for instances where a tag key exists
 	if tagKey != "" {
 		cli.Log.Debugw("found tagKey", "tagKey", tagKey)
 		filters = append(filters, types.Filter{
@@ -206,6 +216,8 @@ func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 			},
 		})
 	}
+
+	// Filter for instances where certain tags exist
 	if len(tag) > 0 {
 		cli.Log.Debugw("found tags", "tag length", len(tag), "tags", tag)
 		filters = append(filters, types.Filter{
@@ -213,10 +225,10 @@ func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 			Values: tag[1:],
 		})
 	}
+
 	input := &ec2.DescribeInstancesInput{
 		Filters: filters,
 	}
-
 	result, err := svc.DescribeInstances(context.TODO(), input)
 	if err != nil {
 		return nil, err
