@@ -55,9 +55,9 @@ func awsCaptureTheFlagSSH(_ *cobra.Command, args []string) error {
 			return err
 		}
 
-		if err := isAgentInstalledOnRemoteHost(&runner.Runner); err != nil {
-			cli.Log.Debugw("isAgentInstalledOnRemoteHost failed")
-			return err
+		if alreadyInstalled := isAgentInstalledOnRemoteHost(&runner.Runner); alreadyInstalled != nil {
+			cli.Log.Debugw("agent already installed on host, skipping")
+			continue
 		}
 
 		token := agentCmdState.InstallAgentToken
