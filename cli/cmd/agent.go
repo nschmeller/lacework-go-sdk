@@ -275,6 +275,9 @@ func init() {
 	agentCTFAWSEC2ICCmd.Flags().StringArrayVarP(&agentCmdState.CTFIncludeRegions,
 		"include_regions", "r", []string{}, "list of regions to filter on",
 	)
+	agentCTFAWSEC2ICCmd.Flags().BoolVar(&agentCmdState.InstallForce,
+		"force", false, "override any pre-installed agent",
+	)
 
 	// 'agent ctf aws ssh' flags
 	agentCTFAWSSSHCmd.Flags().StringVar(&agentCmdState.CTFInfraTagKey,
@@ -304,6 +307,9 @@ func init() {
 	)
 	agentCTFAWSSSHCmd.Flags().IntVar(&agentCmdState.InstallSshPort,
 		"ssh_port", 22, "port to connect to on the remote host",
+	)
+	agentCTFAWSSSHCmd.Flags().BoolVar(&agentCmdState.InstallForce,
+		"force", false, "override any pre-installed agent",
 	)
 }
 
