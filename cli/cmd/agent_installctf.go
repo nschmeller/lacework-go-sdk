@@ -38,7 +38,6 @@ func awsCaptureTheFlagSSH(_ *cobra.Command, args []string) error {
 	}
 
 	for _, runner := range runners {
-		cli.Log.Debugw("runner: ", "runner", runner)
 		cli.Log.Debugw("runner user: ", "user", runner.Runner.User)
 		cli.Log.Debugw("runner region: ", "region", runner.Region)
 		cli.Log.Debugw("runner az: ", "az", runner.AvailabilityZone)
@@ -238,7 +237,7 @@ func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 	for _, reservation := range result.Reservations {
 		for _, instance := range reservation.Instances {
 			if instance.PublicIpAddress != nil && instance.State.Name == "running" {
-				cli.Log.Debugw("found runner", "public ip address", *instance.PublicIpAddress)
+				cli.Log.Debugw("found runner", "public ip address", *instance.PublicIpAddress, "instance state name", instance.State.Name)
 				runner := lwrunner.NewAWSRunner(user, *instance.PublicIpAddress, region, *instance.Placement.AvailabilityZone, *instance.InstanceId, verifyHostCallback)
 				runners = append(runners, runner)
 			}

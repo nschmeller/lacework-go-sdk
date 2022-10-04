@@ -19,8 +19,13 @@
 package lwrunner
 
 import (
+	"context"
+	"fmt"
 	"os"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2instanceconnect"
@@ -77,23 +82,67 @@ func (run AWSRunner) SendAndUseIdentityFile() error {
 // Helper function to send a public key to a test instance. Uses
 // EC2InstanceConnect. The AWS account used to run the tests must
 // have EC2InstanceConnect permissions attached to its IAM role.
+// First checks to make sure the instance is still running.
 func (run AWSRunner) SendPublicKey(pubBytes []byte) error {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return err
+	}
+	svc := ec2.New(ec2.Options{
+		Credentials: cfg.Credentials,
+		Region:      run.Region,
+	})
+
+	ec2Input := &ec2.DescribeInstancesInput{
+		Filters: []types.Filter{
+			{
+				Name: aws.String("instance-state-name"),
+				Values: []string{
+					"running",
+				},
+			},
+			{
+				Name: aws.String("instance-id"),
+				Values: []string{
+					run.InstanceID,
+				},
+			},
+		},
+	}
+	result, err := svc.DescribeInstances(context.TODO(), ec2Input)
+	if err != nil {
+		return err
+	}
+	if len(result.Reservations) > 1 {
+		return fmt.Errorf("expected at most one reservation for one instance")
+	}
+	if len(result.Reservations[0].Instances) != 1 {
+		return fmt.Errorf("expected at most one instance in this reservation")
+	}
+	if *result.Reservations[0].Instances[0].InstanceId != run.InstanceID {
+		return fmt.Errorf("retrieved instance did not match queried instance")
+	}
+	if result.Reservations[0].Instances[0].State.Name != "running" {
+		return fmt.Errorf("retrieved instance is not in the running state")
+	}
+
+	// Send public key
 	sess := session.Must(session.NewSession(
 		&aws.Config{
 			Region:                        aws.String(run.Region),
 			CredentialsChainVerboseErrors: aws.Bool(true),
 		},
 	))
-	svc := ec2instanceconnect.New(sess)
+	ec2icSvc := ec2instanceconnect.New(sess)
 
-	input := &ec2instanceconnect.SendSSHPublicKeyInput{
+	ec2icInput := &ec2instanceconnect.SendSSHPublicKeyInput{
 		AvailabilityZone: &run.AvailabilityZone,
 		InstanceId:       &run.InstanceID,
 		InstanceOSUser:   aws.String(run.Runner.User),
 		SSHPublicKey:     aws.String(string(pubBytes)),
 	}
 
-	_, err := svc.SendSSHPublicKey(input)
+	_, err = ec2icSvc.SendSSHPublicKey(ec2icInput)
 	if err != nil {
 		return err
 	}
