@@ -237,7 +237,7 @@ func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 	runners := []*lwrunner.AWSRunner{}
 	for _, reservation := range result.Reservations {
 		for _, instance := range reservation.Instances {
-			if instance.PublicIpAddress != nil {
+			if instance.PublicIpAddress != nil && instance.State.Name == "running" {
 				cli.Log.Debugw("found runner", "public ip address", *instance.PublicIpAddress)
 				runner := lwrunner.NewAWSRunner(user, *instance.PublicIpAddress, region, *instance.Placement.AvailabilityZone, *instance.InstanceId, verifyHostCallback)
 				runners = append(runners, runner)

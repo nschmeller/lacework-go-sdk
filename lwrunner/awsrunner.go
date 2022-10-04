@@ -19,7 +19,6 @@
 package lwrunner
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -61,9 +60,6 @@ func (run AWSRunner) SendAndUseIdentityFile() error {
 		return err
 	}
 
-	fmt.Println("pubBytes in SendAndUseIdentityFile: ", string(pubBytes))
-	fmt.Println("privBytes in SendAndUseIdentityFile: ", string(privBytes))
-
 	err = run.SendPublicKey(pubBytes)
 	if err != nil {
 		return err
@@ -73,7 +69,6 @@ func (run AWSRunner) SendAndUseIdentityFile() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("signer PublicKey(): ", string(pubBytes))
 	run.Runner.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
 
 	return nil
@@ -98,8 +93,7 @@ func (run AWSRunner) SendPublicKey(pubBytes []byte) error {
 		SSHPublicKey:     aws.String(string(pubBytes)),
 	}
 
-	output, err := svc.SendSSHPublicKey(input)
-	fmt.Println(output)
+	_, err := svc.SendSSHPublicKey(input)
 	if err != nil {
 		return err
 	}
