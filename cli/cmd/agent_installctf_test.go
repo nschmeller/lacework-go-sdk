@@ -11,7 +11,7 @@ import (
 
 // Requires AWS credentials in the shell environment
 // Lists runners, sends keys, attempts to connect
-func TestAwsFindRunnersToCapture(t *testing.T) {
+func TestAwsEC2ICFindRunnersToCapture(t *testing.T) {
 	// agentCmdState.CTFInfraTag = []string{
 	// 	"CaptureTheFlagPlayer",
 	// 	"guid123",
