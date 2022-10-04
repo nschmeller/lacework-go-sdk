@@ -95,7 +95,8 @@ func awsCaptureTheFlagEC2IC(_ *cobra.Command, args []string) error {
 		cli.Log.Debugw("runner: ", "runner hostname", runner.Runner.Hostname)
 		err := runner.SendAndUseIdentityFile()
 		if err != nil {
-			return errors.Wrap(err, "unable to use provided identity file")
+			cli.Log.Debugw("ec2ic failed", "err", err)
+			continue
 		}
 
 		if err := verifyAccessToRemoteHost(&runner.Runner); err != nil {
