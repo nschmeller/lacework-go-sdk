@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"sync"
 	"testing"
 
@@ -11,18 +12,21 @@ import (
 
 // Requires AWS credentials in the shell environment
 // Lists runners, sends keys, attempts to connect
+// Example command to run:
+// `aws-vault exec default -- go test -run TestAwsEC2ICFindRunnersToCapture`
+// If AWS credentials are already present in the shell environment, only use:
+// `go test -run TestAwsEC2ICFindRunnersToCapture`
 func TestAwsEC2ICFindRunnersToCapture(t *testing.T) {
-	// agentCmdState.CTFInfraTag = []string{
-	// 	"CaptureTheFlagPlayer",
-	// 	"guid123",
-	// }
+	if _, ok := os.LookupEnv("AWS_SECRET_ACCESS_KEY"); !ok {
+		t.Skip("aws credentials not found in environment, skipping test")
+	}
+
 	agentCmdState.InstallTrustHostKey = true
 	agentCmdState.CTFInfraTagKey = "CaptureTheFlagPlayer"
 	cli.NonInteractive()
 
 	runners, err := awsFindRunnersToCapture()
 	assert.NoError(t, err)
-	assert.NotEmpty(t, runners)
 
 	wg := new(sync.WaitGroup)
 	for _, runner := range runners {
@@ -37,7 +41,7 @@ func TestAwsEC2ICFindRunnersToCapture(t *testing.T) {
 			assert.NoError(t, err)
 
 			if alreadyInstalled := isAgentInstalledOnRemoteHost(&runner.Runner); alreadyInstalled != nil {
-				out += "agent already installed on this runner\n"
+				out += alreadyInstalled.Error() + "\n"
 			}
 
 			fmt.Println(out)
