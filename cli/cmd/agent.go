@@ -165,35 +165,72 @@ NOTE: New agents could take up to an hour to report back to the platform.`,
 	agentCTFCmd = &cobra.Command{
 		Use:   "ctf",
 		Short: "Install the datacollector agent on all remote hosts",
-		Long:  "TODO",
 	}
 
 	agentCTFAWSCmd = &cobra.Command{
 		Use:   "aws",
 		Short: "Install the datacollector agent on all remote AWS hosts",
-		Long: `This command installs the agent on all remote AWS hosts in your account.
-
-The environment should contain AWS credentials in the following variables:
-- AWS_ACCESS_KEY_ID
-- AWS_SECRET_ACCESS_KEY
-- AWS_SESSION_TOKEN (optional)
-TODO this is currently a no-op, used for subcommands
-		`,
-		// RunE: awsCaptureTheFlag,
 	}
 
 	agentCTFAWSEC2ICCmd = &cobra.Command{
 		Use:   "ec2ic",
 		Short: "Use EC2InstanceConnect to install the datacollector agent on all remote AWS hosts",
-		Long:  "TODO",
 		RunE:  awsCaptureTheFlagEC2IC,
+		Long: `This command installs the agent on all remote AWS EC2 hosts in your account
+using EC2InstanceConnect.
+
+To only install on instances in a specified list of regions:
+
+	lacework agent ctf aws ec2ic --include_regions us-west-2 us-east-2
+
+To filter by AWS tag:
+
+    lacework agent ctf aws ec2ic --infra_tag TagName TagValue
+
+To filter by AWS tag key:
+
+	lacework agent ctf aws ec2ic --infra_tag_key TagName
+
+The environment should contain AWS credentials in the following variables:
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- AWS_SESSION_TOKEN (optional)`,
 	}
 
 	agentCTFAWSSSHCmd = &cobra.Command{
 		Use:   "ssh",
 		Short: "Provide and use SSH authentication to install the datacollector agent on all remote AWS hosts",
-		Long:  "TODO",
-		RunE:  awsCaptureTheFlagSSH,
+		Long: `This command installs the agent on all remote AWS EC2 hosts in your account
+using existing SSH authentication.
+
+To only install on instances in a specified list of regions:
+
+	lacework agent ctf aws ssh --include_regions us-west-2 us-east-2
+
+To filter by AWS tag:
+
+    lacework agent ctf aws ec2ic --infra_tag TagName TagValue
+
+To filter by AWS tag key:
+
+	lacework agent ctf aws ec2ic --infra_tag_key TagName
+
+You will need to provide an SSH authentication method. This authentication method
+should work for all instances that your tag or region filters select.
+
+To authenticate to your selected hosts with a username and password:
+
+    lacework agent ctf aws ssh --ssh_username <your-user> --ssh_password <secret>
+
+To authenticate to your selected hosts with an identity file instead:
+
+    lacework agent ctf aws ssh -i /path/to/your/key
+
+The environment should contain AWS credentials in the following variables:
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- AWS_SESSION_TOKEN (optional)`,
+		RunE: awsCaptureTheFlagSSH,
 	}
 )
 
