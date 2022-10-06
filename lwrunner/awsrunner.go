@@ -19,8 +19,13 @@
 package lwrunner
 
 import (
+	"context"
+	"fmt"
 	"os"
+	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2instanceconnect"
@@ -34,7 +39,39 @@ type AWSRunner struct {
 	InstanceID       string
 }
 
-func NewAWSRunner(user, host, region, availabilityZone, instanceID string, callback ssh.HostKeyCallback) *AWSRunner {
+func NewAWSRunner(amiImageId, host, region, availabilityZone, instanceID string, callback ssh.HostKeyCallback) (*AWSRunner, error) {
+	// Look up the AMI name of the runner
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	svc := ec2.New(ec2.Options{
+		Credentials: cfg.Credentials,
+		Region:      region,
+	})
+	input := ec2.DescribeImagesInput{
+		ImageIds: []string{
+			amiImageId,
+		},
+	}
+	result, err := svc.DescribeImages(context.Background(), &input)
+	if err != nil {
+		return nil, err
+	}
+	if len(result.Images) != 1 {
+		return nil, fmt.Errorf("expected to find only one AMI")
+	}
+
+	// Heuristically assign SSH username based on AMI name
+	var user string
+	if strings.Contains(*result.Images[0].Name, "ubuntu") {
+		user = "ubuntu"
+	} else if strings.Contains(*result.Images[0].Name, "amazon_linux") {
+		user = "ec2-user"
+	} else {
+		return nil, fmt.Errorf("expected either Ubuntu or Amazon Linux 2 AMI, got AMI %s", *result.Images[0].Name)
+	}
+
 	if os.Getenv("LW_SSH_USER") != "" {
 		user = os.Getenv("LW_SSH_USER")
 	}
@@ -51,7 +88,7 @@ func NewAWSRunner(user, host, region, availabilityZone, instanceID string, callb
 		region,
 		availabilityZone,
 		instanceID,
-	}
+	}, nil
 }
 
 func (run AWSRunner) SendAndUseIdentityFile() error {

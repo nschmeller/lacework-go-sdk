@@ -21,6 +21,7 @@ func TestAwsEC2ICFindRunnersToCapture(t *testing.T) {
 		t.Skip("aws credentials not found in environment, skipping test")
 	}
 
+	cli.LogLevel = "DEBUG"
 	agentCmdState.InstallTrustHostKey = true
 	agentCmdState.CTFInfraTagKey = "CaptureTheFlagPlayer"
 	cli.NonInteractive()

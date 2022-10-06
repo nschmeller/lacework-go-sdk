@@ -185,7 +185,6 @@ func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 	var (
 		tagKey = agentCmdState.CTFInfraTagKey
 		tag    = agentCmdState.CTFInfraTag
-		user   = "ubuntu"
 	)
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
@@ -239,7 +238,13 @@ func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
 		for _, instance := range reservation.Instances {
 			if instance.PublicIpAddress != nil && instance.State.Name == "running" {
 				cli.Log.Debugw("found runner", "public ip address", *instance.PublicIpAddress, "instance state name", instance.State.Name)
-				runner := lwrunner.NewAWSRunner(user, *instance.PublicIpAddress, region, *instance.Placement.AvailabilityZone, *instance.InstanceId, verifyHostCallback)
+
+				runner, err := lwrunner.NewAWSRunner(*instance.ImageId, *instance.PublicIpAddress, region, *instance.Placement.AvailabilityZone, *instance.InstanceId, verifyHostCallback)
+				if err != nil {
+					cli.Log.Debugw("error identifying runner", "error", err, "instance ID", *instance.InstanceId)
+					continue
+				}
+
 				runners = append(runners, runner)
 			}
 		}
