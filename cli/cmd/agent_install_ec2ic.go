@@ -54,7 +54,7 @@ AWS credentials are read from the following environment variables:
 - AWS_SESSION_TOKEN (optional)
 
 This command will automatically add hosts with successful connections to
-'~/.ssh/known_hosts' unless specified with '--trust_host_key false'.`,
+'~/.ssh/known_hosts' unless specified with '--no_trust_host_key'.`,
 	}
 )
 
@@ -70,7 +70,7 @@ func init() {
 		"token", "", "agent access token",
 	)
 	agentInstallAWSEC2ICCmd.Flags().BoolVar(&agentCmdState.InstallTrustHostKey,
-		"trust_host_key", true, "automatically add host keys to the ~/.ssh/known_hosts file",
+		"no_trust_host_key", true, "do not automatically add host keys to the ~/.ssh/known_hosts file",
 	)
 	agentInstallAWSEC2ICCmd.Flags().StringSliceVarP(&agentCmdState.InstallIncludeRegions,
 		"include_regions", "r", []string{}, "list of regions to filter on",

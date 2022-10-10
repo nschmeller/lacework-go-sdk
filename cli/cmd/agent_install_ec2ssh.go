@@ -62,7 +62,7 @@ The environment should contain AWS credentials in the following variables:
 - AWS_SESSION_TOKEN (optional),
 
 This command will automatically add hosts with successful connections to
-'~/.ssh/known_hosts' unless specified with '--trust_host_key false'.`,
+'~/.ssh/known_hosts' unless specified with '--no_trust_host_key'.`,
 		RunE: installAWSSSH,
 	}
 )
@@ -83,7 +83,7 @@ func init() {
 		"token", "", "agent access token",
 	)
 	agentInstallAWSSSHCmd.Flags().BoolVar(&agentCmdState.InstallTrustHostKey,
-		"trust_host_key", true, "automatically add host keys to the ~/.ssh/known_hosts file",
+		"no_trust_host_key", true, "do not automatically add host keys to the ~/.ssh/known_hosts file",
 	)
 	agentInstallAWSSSHCmd.Flags().StringSliceVarP(&agentCmdState.InstallIncludeRegions,
 		"include_regions", "r", []string{}, "list of regions to filter on",
