@@ -21,6 +21,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -32,17 +33,13 @@ import (
 )
 
 func installAWSSSH(_ *cobra.Command, args []string) error {
-	runners, err := awsFindRunnersToCapture()
+	runners, err := awsDescribeInstances()
 	if err != nil {
 		return err
 	}
 
 	for _, runner := range runners {
-		cli.Log.Debugw("runner user: ", "user", runner.Runner.User)
-		cli.Log.Debugw("runner region: ", "region", runner.Region)
-		cli.Log.Debugw("runner az: ", "az", runner.AvailabilityZone)
-		cli.Log.Debugw("runner instance ID: ", "instance ID", runner.InstanceID)
-		cli.Log.Debugw("runner: ", "runner hostname", runner.Runner.Hostname)
+		cli.Log.Debugw("runner info: ", "user", runner.Runner.User, "region", runner.Region, "az", runner.AvailabilityZone, "instance ID", runner.InstanceID, "hostname", runner.Runner.Hostname)
 
 		err := runner.Runner.UseIdentityFile(agentCmdState.InstallIdentityFile)
 		if err != nil {
@@ -50,8 +47,7 @@ func installAWSSSH(_ *cobra.Command, args []string) error {
 		}
 
 		if err := verifyAccessToRemoteHost(&runner.Runner); err != nil {
-			cli.Log.Debugw("verifyAccessToRemoteHost failed")
-			return err
+			return errors.Wrap(err, "verifyAccessToRemoteHost failed")
 		}
 
 		if alreadyInstalled := isAgentInstalledOnRemoteHost(&runner.Runner); alreadyInstalled != nil {
@@ -81,7 +77,7 @@ func installAWSSSH(_ *cobra.Command, args []string) error {
 }
 
 func installAWSEC2IC(_ *cobra.Command, args []string) error {
-	runners, err := awsFindRunnersToCapture()
+	runners, err := awsDescribeInstances()
 	if err != nil {
 		return err
 	}
@@ -130,7 +126,7 @@ func installAWSEC2IC(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func awsFindRunnersToCapture() ([]*lwrunner.AWSRunner, error) {
+func awsDescribeInstances() ([]*lwrunner.AWSRunner, error) {
 	regions, err := awsFindRegions()
 	if err != nil {
 		return nil, err
@@ -138,7 +134,7 @@ func awsFindRunnersToCapture() ([]*lwrunner.AWSRunner, error) {
 
 	allRunners := []*lwrunner.AWSRunner{}
 	for _, region := range regions {
-		regionRunners, err := awsFindRunnersInRegion(*region.RegionName)
+		regionRunners, err := awsRegionDescribeInstances(*region.RegionName)
 		if err != nil {
 			return nil, err
 		}
@@ -169,9 +165,15 @@ func awsFindRegions() ([]types.Region, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Look for region string in shell environment first
+	region, ok := os.LookupEnv("AWS_REGION")
+	if !ok {
+		region = "us-west-2" // use us-west-2 for lack of a better region
+	}
 	svc := ec2.New(ec2.Options{
 		Credentials: cfg.Credentials,
-		Region:      "us-west-2", // use us-west-2 for lack of a better region
+		Region:      region,
 	})
 
 	output, err := svc.DescribeRegions(context.TODO(), input)
@@ -181,7 +183,7 @@ func awsFindRegions() ([]types.Region, error) {
 	return output.Regions, nil
 }
 
-func awsFindRunnersInRegion(region string) ([]*lwrunner.AWSRunner, error) {
+func awsRegionDescribeInstances(region string) ([]*lwrunner.AWSRunner, error) {
 	var (
 		tagKey = agentCmdState.CTFInfraTagKey
 		tag    = agentCmdState.CTFInfraTag
