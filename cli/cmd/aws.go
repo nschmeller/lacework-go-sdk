@@ -21,6 +21,7 @@ package cmd
 import (
 	"context"
 	"os"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -47,7 +48,7 @@ func awsDescribeInstances() ([]*lwrunner.AWSRunner, error) {
 	return allRunners, nil
 }
 
-// awsFindRegions queries the AWS API to list all the regions that
+// awsDescribeRegions queries the AWS API to list all the regions that
 // are enabled for the user's AWS account. Use the "include_regions"
 // command-line flag to only get regions in this list.
 func awsDescribeRegions() ([]types.Region, error) {
@@ -139,21 +140,46 @@ func awsRegionDescribeInstances(region string) ([]*lwrunner.AWSRunner, error) {
 	}
 
 	runners := []*lwrunner.AWSRunner{}
+	producerWg := new(sync.WaitGroup)
+	runnerCh := make(chan *lwrunner.AWSRunner)
+
+	// We have multiple producers of runners and a single consumer.
+	// This goroutine acts as the consumer and reads from a channel into
+	// a slice. Pass a pointer to this slice and wait for this goroutine
+	// to finish before returning the memory pointed to.
+	consumerWg := new(sync.WaitGroup)
+	consumerWg.Add(1)
+	go func(runners *[]*lwrunner.AWSRunner) {
+		for runner := range runnerCh {
+			*runners = append(*runners, runner)
+		}
+		consumerWg.Done()
+	}(&runners)
+
 	for _, reservation := range result.Reservations {
 		for _, instance := range reservation.Instances {
 			if instance.PublicIpAddress != nil && instance.State.Name == "running" {
-				cli.Log.Debugw("found runner", "public ip address", *instance.PublicIpAddress, "instance state name", instance.State.Name)
+				producerWg.Add(1)
+				go func(instance types.Instance) {
+					cli.Log.Debugw("found runner", "public ip address", *instance.PublicIpAddress, "instance state name", instance.State.Name)
 
-				runner, err := lwrunner.NewAWSRunner(*instance.ImageId, *instance.PublicIpAddress, region, *instance.Placement.AvailabilityZone, *instance.InstanceId, verifyHostCallback)
-				if err != nil {
-					cli.Log.Debugw("error identifying runner", "error", err, "instance ID", *instance.InstanceId)
-					continue
-				}
+					runner, err := lwrunner.NewAWSRunner(*instance.ImageId, *instance.PublicIpAddress, region, *instance.Placement.AvailabilityZone, *instance.InstanceId, verifyHostCallback)
+					if err != nil {
+						cli.Log.Debugw("error identifying runner", "error", err, "instance ID", *instance.InstanceId)
+					}
 
-				runners = append(runners, runner)
+					runnerCh <- runner
+					producerWg.Done()
+				}(instance)
 			}
 		}
 	}
+
+	// Wait for the producers to finish, then close the channel they're writing to,
+	// then wait for the consumer to finish
+	producerWg.Wait()
+	close(runnerCh)
+	consumerWg.Wait()
 
 	return runners, nil
 }
